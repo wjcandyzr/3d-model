@@ -1,0 +1,66 @@
+name: Check and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# never run two deploys at once; a newer push waits for the one in flight
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: 39.97.61.240
+      DEPLOY_USER: deploy
+      RELEASES: /var/www/house-releases
+      KEEP_RELEASES: 5
+      SITE_URL: http://39.97.61.240:8090/
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check page and furniture layout
+        run: node scripts/check.mjs
+
+      - name: Build standalone site
+        run: bash scripts/build.sh
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::error::Repository secret DEPLOY_SSH_KEY is missing (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # the server's host key, pinned so the upload can't be redirected elsewhere
+          echo "39.97.61.240 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPEATLl+G6bfYPydrUDe/Cp+WMWXAoU9kOiE//YKzQYx" >> ~/.ssh/known_hosts
+
+      - name: Upload release and switch over
+        run: |
+          SSH="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes"
+          REL="$RELEASES/$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
+          # upload into a fresh release directory, hard-linking unchanged files from the live one
+          rsync -az --delete --chmod=Da+rx,Fa+r -e "$SSH" --link-dest="$RELEASES/current/" dist/ "$DEPLOY_USER@$DEPLOY_HOST:$REL/"
+          # flip the symlink nginx serves from in one atomic rename, then prune old releases
+          $SSH "$DEPLOY_USER@$DEPLOY_HOST" "set -e
+            ln -sfn '$REL' '$RELEASES/current.tmp'
+            mv -Tf '$RELEASES/current.tmp' '$RELEASES/current'
+            ls -1dt '$RELEASES'/2*/ | tail -n +$((KEEP_RELEASES + 1)) | xargs -r rm -rf
+            echo live: \$(readlink '$RELEASES/current')"
+
+      - name: Smoke test
+        run: |
+          sleep 2
+          curl -fsS -o /dev/null -w "index.html %{http_code}, %{size_download} bytes\n" "$SITE_URL"
+          curl -fsS -o /dev/null -w "three.min.js %{http_code}\n" "${SITE_URL}lib/three.min.js"
