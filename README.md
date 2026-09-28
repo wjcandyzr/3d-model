@@ -1,7 +1,7 @@
 # 户型还原模型
 
 根据看房视频还原的家：写实第一视角漫游、可拖动家具的平面图、整体 3D 模型。
-线上地址：<http://39.97.61.240:8090/>
+线上地址：<https://model.yyzzrr.top/>（也可用 <http://39.97.61.240:8090/>）
 
 ## 目录
 
@@ -13,7 +13,7 @@
 | `vendor/` | three.js 0.147.0（MIT，见 `three-LICENSE`），服务器版从本站加载，不走国外 CDN |
 | `scripts/check.mjs` | 部署前检查：脚本能解析、室内面积 = 139.5 m²、推荐家具没有冲突、定制柜不压墙、每个房间都走得进去 |
 | `scripts/build.sh` | 生成服务器版 `dist/`：补全 HTML 外壳、three.js 改为本站加载、去掉 Google 字体 |
-| `deploy/nginx-house-8090.conf` | 服务器上 nginx 配置的副本（参考用） |
+| `deploy/nginx-model.conf`、`deploy/nginx-house-8090.conf` | 服务器上 nginx 配置的副本（参考用）：域名走 443（HTTPS，Let's Encrypt 证书自动续期），8090 端口保留 |
 
 户型尺寸改 `src/index.html` 里的 `const G = {…}` 轴线；每个房间、墙、门窗、定制柜都按这些轴线定位。
 

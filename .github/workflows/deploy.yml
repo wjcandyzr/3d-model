@@ -18,7 +18,7 @@ jobs:
       DEPLOY_USER: deploy
       RELEASES: /var/www/house-releases
       KEEP_RELEASES: 5
-      SITE_URL: http://39.97.61.240:8090/
+      SITE_URL: https://model.yyzzrr.top/
     steps:
       - uses: actions/checkout@v4
 
