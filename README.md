@@ -12,6 +12,7 @@
 | `src/tex/` | 从视频里裁出来的贴图：入户门、厨房墙砖、木地板、柜子木纹、窗外景色 |
 | `vendor/` | three.js 0.147.0（MIT，见 `three-LICENSE`），服务器版从本站加载，不走国外 CDN |
 | `scripts/check.mjs` | 部署前检查：脚本能解析、室内面积 = 139.5 m²、推荐家具没有冲突、定制柜不压墙、每个房间都走得进去 |
+| `scripts/smoke3d.cjs` | 部署前用真实的 three.js 把每种家具和装饰都构建一遍，拦住 3D 代码里的运行错误 |
 | `scripts/build.sh` | 生成服务器版 `dist/`：补全 HTML 外壳、three.js 改为本站加载、去掉 Google 字体 |
 | `deploy/nginx-model.conf`、`deploy/nginx-house-8090.conf` | 服务器上 nginx 配置的副本（参考用）：域名走 443（HTTPS，Let's Encrypt 证书自动续期），8090 端口保留 |
 
@@ -21,7 +22,7 @@
 
 推到 `main` 分支后，GitHub Actions（`.github/workflows/deploy.yml`）会：
 
-1. `node scripts/check.mjs`，任何一项不通过就停下，不部署；
+1. `node scripts/check.mjs` 和 `node scripts/smoke3d.cjs`，任何一项不通过就停下，不部署；
 2. `bash scripts/build.sh` 打包；
 3. 用 `deploy` 用户把 `dist/` 上传到服务器 `/var/www/house-releases/<时间>-<提交号>/`；
 4. 把 `/var/www/house-releases/current` 链接一次性切到新版本（nginx 就是从这里读的），只保留最近 5 个版本；

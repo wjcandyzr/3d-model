@@ -29,6 +29,9 @@ jobs:
       - name: Check page and furniture layout
         run: node scripts/check.mjs
 
+      - name: Build every 3D object once (smoke test)
+        run: node scripts/smoke3d.cjs
+
       - name: Build standalone site
         run: bash scripts/build.sh
 

@@ -13,7 +13,7 @@ const problems = [];
 const html = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
 const inline = html.match(/<script>\r?\n([\s\S]*?)\r?\n<\/script>/);
 if (!inline) fail(['src/index.html: inline <script> not found']);
-const script = inline[1];
+const script = inline[1].replace(/\r\n/g, '\n');   // tolerate CRLF checkouts
 try { new vm.Script(script, { filename: 'src/index.html <script>' }); }
 catch (e) { fail([`src/index.html: script does not parse: ${e.message}`]); }
 
